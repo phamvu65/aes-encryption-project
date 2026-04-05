@@ -65,27 +65,43 @@ public class AES {
     }
 
     public static byte[] encryptBlock(byte[] input, byte[] expandedKey) {
+        int numRounds = (expandedKey.length / 16) - 1; // Tự động tính 10, 12, hoac 14
         byte[] state = input.clone();
+
         addRoundKey(state, getRoundKey(expandedKey, 0));
-        for (int r = 1; r <= 9; r++) {
-            subBytes(state); shiftRows(state); mixColumns(state);
+
+        for (int r = 1; r < numRounds; r++) {
+            subBytes(state);
+            shiftRows(state);
+            mixColumns(state);
             addRoundKey(state, getRoundKey(expandedKey, r));
         }
-        subBytes(state); shiftRows(state);
-        addRoundKey(state, getRoundKey(expandedKey, 10));
+
+        // Vòng cuối không có MixColumns
+        subBytes(state);
+        shiftRows(state);
+        addRoundKey(state, getRoundKey(expandedKey, numRounds));
+
         return state;
     }
 
     public static byte[] decryptBlock(byte[] input, byte[] expandedKey) {
+        int numRounds = (expandedKey.length / 16) - 1;
         byte[] state = input.clone();
-        addRoundKey(state, getRoundKey(expandedKey, 10));
-        for (int r = 9; r >= 1; r--) {
-            invShiftRows(state); invSubBytes(state);
+
+        addRoundKey(state, getRoundKey(expandedKey, numRounds));
+
+        for (int r = numRounds - 1; r >= 1; r--) {
+            invShiftRows(state);
+            invSubBytes(state);
             addRoundKey(state, getRoundKey(expandedKey, r));
             invMixColumns(state);
         }
-        invShiftRows(state); invSubBytes(state);
+
+        invShiftRows(state);
+        invSubBytes(state);
         addRoundKey(state, getRoundKey(expandedKey, 0));
+
         return state;
     }
 

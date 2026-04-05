@@ -1,0 +1,15 @@
+-------------------------------------------
+Thuat toan: AES-128 (CBC)
+Ban ro: Phạm Nguyên Vũ Ct070165@gmail.com ,1234
+Ban ma: pOQYxySPI0OGxJXMdpe+32ojMkk85PHD0kjUwB3EV92c6h9DZWRcrPwKO6yrkJmhcDg6dBxwkPBqn0+34kSggA==
+Ma hoa: 4480500 ns
+Giai ma: 493900 ns
+-------------------------------------------
+
+-------------------------------------------
+Thuat toan: AES-128 (CBC)
+Ban ro: NGuyen Van zzxcfasfsa
+Ban ma: gyOmlYHi9tVRSdCAD3b1EHuy0chjp0bj9DjDoUS0h1kP1zQz4C8BCO3SJAko9jwR
+Ma hoa: 14683100 ns
+Giai ma: 1308900 ns
+-------------------------------------------

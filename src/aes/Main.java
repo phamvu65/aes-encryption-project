@@ -1,120 +1,127 @@
 package aes;
 
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
 public class Main {
 
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
-        System.out.println("--- HE THONG MA HOA AES-128 (CHE DO CBC) ---");
-        System.out.print("Nhap plaintext: ");
-        String input = sc.nextLine();
+        boolean isRunning = true;
 
-        // Neu chuoi rong, thoat chuong trinh
-        if (input.isEmpty()) {
-            System.out.println("Loi: Chuoi nhap vao khong duoc de trong!");
-            return;
+        while (isRunning) {
+            System.out.println("\n====================================================");
+            System.out.println("       HE THONG MA HOA AES ĐA BIEN THE (CBC)        ");
+            System.out.println("====================================================");
+            System.out.println("1. AES-128 (Key 16 bytes)");
+            System.out.println("2. AES-192 (Key 24 bytes)");
+            System.out.println("3. AES-256 (Key 32 bytes)");
+            System.out.println("0. THOAT CHUONG TRINH");
+            System.out.print("Vui long chon (0-3): ");
+
+            int choice;
+            try {
+                choice = Integer.parseInt(sc.nextLine());
+            } catch (Exception e) {
+                System.out.println(">> Loi: Vui long nhap so!");
+                continue;
+            }
+
+            if (choice == 0) {
+                System.out.println(">> Tam biet!");
+                break;
+            }
+
+            if (choice < 1 || choice > 3) {
+                System.out.println(">> Lua chon khong hop le!");
+                continue;
+            }
+
+            int keySize = (choice == 2) ? 24 : (choice == 3) ? 32 : 16;
+            String modeName = "AES-" + (keySize * 8);
+
+            // ===== NHAP KEY =====
+            System.out.print("Nhap khoa bi mat (" + keySize + " ky tu): ");
+            String keyStr = sc.nextLine();
+
+            if (keyStr.length() != keySize) {
+                System.out.println(">> Loi: Key phai dung " + keySize + " ky tu!");
+                continue;
+            }
+
+            byte[] key = keyStr.getBytes(StandardCharsets.UTF_8);
+
+            // ===== NHAP PLAINTEXT =====
+            System.out.print("Nhap noi dung can ma hoa: ");
+            String plaintext = sc.nextLine();
+
+            if (plaintext.isEmpty()) {
+                System.out.println(">> Loi: Khong duoc de trong!");
+                continue;
+            }
+
+            try {
+                // ===== MA HOA =====
+                long startEnc = System.nanoTime();
+                String cipher = AESService.encrypt(
+                        plaintext.getBytes(StandardCharsets.UTF_8),
+                        key
+                );
+                long endEnc = System.nanoTime();
+
+                // ===== GIAI MA =====
+                long startDec = System.nanoTime();
+                byte[] decrypted = AESService.decrypt(cipher, key);
+                long endDec = System.nanoTime();
+
+                String recovered = new String(decrypted, StandardCharsets.UTF_8);
+
+                // ===== HIEN THI =====
+                displayResults(
+                        modeName,
+                        cipher,
+                        recovered,
+                        endEnc - startEnc,
+                        endDec - startDec
+                );
+
+                // ===== SAVE FILE =====
+                saveToFile(modeName, plaintext, cipher, endEnc - startEnc, endDec - startDec);
+
+            } catch (Exception e) {
+                System.out.println(">> Loi: " + e.getMessage());
+            }
         }
-
-        // Key va IV co dinh de de kiem tra (16 bytes moi loai)
-        byte[] key = { 0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x0d,0x0e,0x0f,0x10 };
-        byte[] iv =  { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 };
-
-        // 1. Padding du lieu (vi du nhap 5 ky tu se duoc pad len thanh 16 ky tu)
-        byte[] data = pad(input.getBytes());
-        byte[] expandedKey = KeyExpansion.expandKey(key);
-
-        // --- ENCRYPT CBC ---
-        long startEnc = System.nanoTime();
-        byte[] encryptedResult = new byte[data.length];
-        byte[] prevBlockEnc = iv; // IV cho khoi dau tien
-
-        for (int i = 0; i < data.length; i += 16) {
-            byte[] block = new byte[16];
-            System.arraycopy(data, i, block, 0, 16);
-
-            // XOR voi khoi truoc do (Chinh la CBC)
-            byte[] xored = AESUtils.xorBlocks(block, prevBlockEnc);
-            byte[] encBlock = AES.encryptBlock(xored, expandedKey);
-
-            System.arraycopy(encBlock, 0, encryptedResult, i, 16);
-            prevBlockEnc = encBlock; // Luu lai lam IV cho khoi sau
-        }
-        long endEnc = System.nanoTime();
-
-        String base64Enc = encodeBase64(encryptedResult);
-        System.out.println("\nKet qua ma hoa (Base64): " + base64Enc);
-        System.out.println("Thoi gian ma hoa: " + (endEnc - startEnc) + " ns");
-
-        // --- DECRYPT CBC ---
-        long startDec = System.nanoTime();
-        byte[] decryptedResult = new byte[encryptedResult.length];
-        byte[] prevBlockDec = iv;
-
-        for (int i = 0; i < encryptedResult.length; i += 16) {
-            byte[] currentCipherBlock = new byte[16];
-            System.arraycopy(encryptedResult, i, currentCipherBlock, 0, 16);
-
-            // Giai ma AES khoi hien tai
-            byte[] decBlock = AES.decryptBlock(currentCipherBlock, expandedKey);
-            // XOR voi ciphertext khoi truoc do
-            byte[] xored = AESUtils.xorBlocks(decBlock, prevBlockDec);
-
-            System.arraycopy(xored, 0, decryptedResult, i, 16);
-            prevBlockDec = currentCipherBlock; // Quan trong: Luu Ciphertext khoi truoc
-        }
-
-        byte[] finalPlain = unpad(decryptedResult);
-        long endDec = System.nanoTime();
-
-        System.out.println("\nKet qua giai ma: " + new String(finalPlain));
-        System.out.println("Thoi gian giai ma: " + (endDec - startDec) + " ns");
 
         sc.close();
     }
 
-    // --- BASE64 CUSTOM  ---
-    private static String encodeBase64(byte[] data) {
-        String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-        StringBuilder sb = new StringBuilder();
-        // Xu ly tung nhom 3 byte de chuyen thanh 4 ky tu Base64
-        for (int i = 0; i < data.length; i += 3) {
-            int val = (data[i] & 0xFF) << 16;
-            int count = 1;
-            if (i + 1 < data.length) {
-                val |= (data[i + 1] & 0xFF) << 8;
-                count++;
-            }
-            if (i + 2 < data.length) {
-                val |= (data[i + 2] & 0xFF);
-                count++;
-            }
-
-            sb.append(alphabet.charAt((val >> 18) & 0x3F));
-            sb.append(alphabet.charAt((val >> 12) & 0x3F));
-            sb.append(count > 1 ? alphabet.charAt((val >> 6) & 0x3F) : '=');
-            sb.append(count > 2 ? alphabet.charAt(val & 0x3F) : '=');
-        }
-        return sb.toString();
+    // ================= DISPLAY =================
+    private static void displayResults(String mode, String cipher, String plain, long tEnc, long tDec) {
+        System.out.println("\n--- KET QUA THUC NGHIEM ---");
+        System.out.println("+ Che do: " + mode + " (CBC)");
+        System.out.println("+ Ban ma (Base64): " + cipher);
+        System.out.println("+ Ban ro sau giai ma: " + plain);
+        System.out.println("+ Thoi gian ma hoa: " + tEnc + " ns");
+        System.out.println("+ Thoi gian giai ma: " + tDec + " ns");
     }
 
-    // PKCS7 Padding
-    private static byte[] pad(byte[] data) {
-        int padLen = 16 - (data.length % 16);
-        byte[] res = new byte[data.length + padLen];
-        System.arraycopy(data, 0, res, 0, data.length);
-        for (int i = data.length; i < res.length; i++) {
-            res[i] = (byte) padLen;
-        }
-        return res;
-    }
+    // ================= SAVE FILE =================
+    private static void saveToFile(String mode, String plain, String cipher, long tEnc, long tDec) {
+        try (FileWriter fw = new FileWriter("ket_qua_aes.txt", true)) {
+            fw.write("\n-------------------------------------------");
+            fw.write("\nThuat toan: " + mode + " (CBC)");
+            fw.write("\nBan ro: " + plain);
+            fw.write("\nBan ma: " + cipher);
+            fw.write("\nMa hoa: " + tEnc + " ns");
+            fw.write("\nGiai ma: " + tDec + " ns");
+            fw.write("\n-------------------------------------------\n");
 
-    // PKCS7 Unpadding
-    private static byte[] unpad(byte[] data) {
-        int padLen = data[data.length - 1];
-        if (padLen <= 0 || padLen > 16) return data; // Phong tru loi
-        byte[] res = new byte[data.length - padLen];
-        System.arraycopy(data, 0, res, 0, res.length);
-        return res;
+            System.out.println(">> Da luu file 'ket_qua_aes.txt'");
+        } catch (IOException e) {
+            System.out.println(">> Loi ghi file: " + e.getMessage());
+        }
     }
 }
