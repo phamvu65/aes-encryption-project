@@ -88,7 +88,8 @@ public class Main {
                 );
 
                 // ===== SAVE FILE =====
-                saveToFile(modeName, plaintext, cipher, endEnc - startEnc, endDec - startDec);
+                AESService.saveToFile("ket_qua_aes.txt", modeName, plaintext, cipher, endEnc - startEnc, endDec - startDec);
+                System.out.println(">> Da luu file 'ket_qua_aes.txt' thong qua AESService");
 
             } catch (Exception e) {
                 System.out.println(">> Loi: " + e.getMessage());
@@ -108,20 +109,4 @@ public class Main {
         System.out.println("+ Thoi gian giai ma: " + tDec + " ns");
     }
 
-    // ================= SAVE FILE =================
-    private static void saveToFile(String mode, String plain, String cipher, long tEnc, long tDec) {
-        try (FileWriter fw = new FileWriter("ket_qua_aes.txt", true)) {
-            fw.write("\n-------------------------------------------");
-            fw.write("\nThuat toan: " + mode + " (CBC)");
-            fw.write("\nBan ro: " + plain);
-            fw.write("\nBan ma: " + cipher);
-            fw.write("\nMa hoa: " + tEnc + " ns");
-            fw.write("\nGiai ma: " + tDec + " ns");
-            fw.write("\n-------------------------------------------\n");
-
-            System.out.println(">> Da luu file 'ket_qua_aes.txt'");
-        } catch (IOException e) {
-            System.out.println(">> Loi ghi file: " + e.getMessage());
-        }
-    }
 }

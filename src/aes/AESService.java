@@ -1,6 +1,11 @@
 package aes;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 
 public class AESService {
@@ -108,10 +113,29 @@ public class AESService {
         return res;
     }
 
-    // ================= VALIDATION =================
-    private static void validateKey(byte[] key) {
-        if (key == null || !(key.length == 16 || key.length == 24 || key.length == 32)) {
-            throw new IllegalArgumentException("Key must be 16, 24, or 32 bytes");
+        public static void saveToFile(String filePath, String mode, String plain, String cipher, long tEnc, long tDec) throws IOException {
+            try (BufferedWriter bw = new BufferedWriter(new FileWriter("ket_qua_aes.txt", true))) {
+                DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
+
+                bw.write("\n-------------------------------------------");
+                bw.write("\nThoi gian: " + dtf.format(LocalDateTime.now()));
+                bw.write("\nThuat toan: " + mode + " (CBC)");
+                bw.write("\nBan ro: " + plain);
+                bw.write("\nBan ma (Base64): " + cipher);
+                bw.write("\nThoi gian ma hoa: " + tEnc + " ns");
+                bw.write("\nThoi gian giai ma: " + tDec + " ns");
+                bw.write("\n-------------------------------------------\n");
+            }
         }
-    }
+        public static void validateKey(byte[] key) {
+            if (key == null || !(key.length == 16 || key.length == 24 || key.length == 32)) {
+                throw new IllegalArgumentException("Key phai co do dai 16, 24, hoac 32 bytes!");
+            }
+
+            for (byte b : key) {
+                if (b == 32) {
+                    throw new IllegalArgumentException("Key khong duoc chua ky tu khoang trang!");
+                }
+            }
+        }
 }

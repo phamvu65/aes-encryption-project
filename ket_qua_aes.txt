@@ -13,3 +13,12 @@ Ban ma: gyOmlYHi9tVRSdCAD3b1EHuy0chjp0bj9DjDoUS0h1kP1zQz4C8BCO3SJAko9jwR
 Ma hoa: 14683100 ns
 Giai ma: 1308900 ns
 -------------------------------------------
+
+-------------------------------------------
+Thoi gian: 2026/04/06 10:37:21
+Thuat toan: pHẠM nGUYEN VŨ (CBC)
+Ban ro: 4EfFoqa0A37iAFy9SMpDyirdqJP7Le7rlR0qi/HgzU+7Z5kGxrHDfNGTG3GM02HM
+Ban ma (Base64): pHẠM nGUYEN VŨ
+Thoi gian ma hoa: 5715200 ns
+Thoi gian giai ma: 227400 ns
+-------------------------------------------

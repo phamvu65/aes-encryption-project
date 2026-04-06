@@ -15,7 +15,7 @@ public class AESGui extends JFrame {
     private JLabel lblStatus, lblTimeEnc, lblTimeDec;
     private JButton btnEncrypt, btnDecrypt, btnClear, btnSave;
 
-    // ===== FONT CONSTANTS =====
+    // ===== FONT & COLOR CONSTANTS (GIỮ NGUYÊN) =====
     private static final Font FONT_TITLE      = new Font("Segoe UI", Font.BOLD,  28);
     private static final Font FONT_LABEL      = new Font("Segoe UI", Font.BOLD,  17);
     private static final Font FONT_COMBO      = new Font("Segoe UI", Font.PLAIN, 17);
@@ -26,12 +26,15 @@ public class AESGui extends JFrame {
     private static final Font FONT_TIME       = new Font("Segoe UI", Font.BOLD,  15);
     private static final Font FONT_STATUS     = new Font("Segoe UI", Font.BOLD,  16);
 
-    // ===== COLOR CONSTANTS =====
     private static final Color COLOR_BLUE     = new Color(0,  102, 204);
     private static final Color COLOR_GREEN    = new Color(22, 163, 117);
     private static final Color COLOR_GREY     = new Color(80,  90,  100);
     private static final Color COLOR_YELLOW   = new Color(200, 140,   0);
     private static final Color COLOR_BG       = new Color(245, 247, 250);
+
+    // BIẾN TOÀN CỤC LƯU THỜI GIAN (Để save kết quả chính xác)
+    private long lastTimeEnc = 0;
+    private long lastTimeDec = 0;
 
     public AESGui() {
         initUI();
@@ -55,30 +58,26 @@ public class AESGui extends JFrame {
         setContentPane(mainPanel);
     }
 
-    // ──────────────────────────── HEADER ────────────────────────────
+    // ──────────────────────────── HEADER (GIỮ NGUYÊN) ────────────────────────────
     private JPanel createHeaderPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setOpaque(false);
         panel.setBorder(new EmptyBorder(0, 0, 10, 0));
-
         JLabel title = new JLabel("HỆ THỐNG MÃ HÓA AES ĐA BIẾN THỂ (CBC)", SwingConstants.CENTER);
         title.setFont(FONT_TITLE);
         title.setForeground(COLOR_BLUE);
-
         panel.add(title, BorderLayout.CENTER);
         return panel;
     }
 
-    // ──────────────────────────── MAIN CONTENT ────────────────────────────
+    // ──────────────────────────── MAIN CONTENT (GIỮ NGUYÊN) ────────────────────────────
     private JSplitPane createMainContent() {
-        // ---- INPUT PANEL ----
         JPanel inputPanel = new JPanel(new BorderLayout(10, 14));
         inputPanel.setBackground(Color.WHITE);
         inputPanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(COLOR_BLUE, 2, true),
                 new EmptyBorder(18, 18, 18, 18)));
 
-        // Control row
         JPanel control = new JPanel(new GridLayout(2, 2, 15, 12));
         control.setOpaque(false);
 
@@ -114,7 +113,6 @@ public class AESGui extends JFrame {
         scrollPlain.setBorder(titledBorder("Nội dung cần mã hóa (Plaintext)", COLOR_BLUE));
         inputPanel.add(scrollPlain, BorderLayout.CENTER);
 
-        // ---- OUTPUT PANEL ----
         JPanel outputPanel = new JPanel(new BorderLayout(10, 14));
         outputPanel.setBackground(Color.WHITE);
         outputPanel.setBorder(BorderFactory.createCompoundBorder(
@@ -145,7 +143,6 @@ public class AESGui extends JFrame {
         outputContent.add(scrollDec);
         outputPanel.add(outputContent, BorderLayout.CENTER);
 
-        // Time labels
         JPanel timePanel = new JPanel(new GridLayout(1, 2, 30, 0));
         timePanel.setOpaque(false);
         timePanel.setBorder(new EmptyBorder(10, 0, 0, 0));
@@ -169,12 +166,10 @@ public class AESGui extends JFrame {
         return split;
     }
 
-    // ──────────────────────────── FOOTER ────────────────────────────
+    // ──────────────────────────── FOOTER (GIỮ NGUYÊN) ────────────────────────────
     private JPanel createFooterPanel() {
         JPanel wrapper = new JPanel(new BorderLayout(0, 10));
         wrapper.setOpaque(false);
-
-        // Button row
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 14));
         btnPanel.setOpaque(false);
 
@@ -193,7 +188,6 @@ public class AESGui extends JFrame {
         btnPanel.add(btnClear);
         btnPanel.add(btnSave);
 
-        // Status bar
         lblStatus = new JLabel(" ", SwingConstants.CENTER);
         lblStatus.setFont(FONT_STATUS);
         lblStatus.setOpaque(true);
@@ -208,7 +202,7 @@ public class AESGui extends JFrame {
         return wrapper;
     }
 
-    // ──────────────────────────── HELPERS ────────────────────────────
+    // ──────────────────────────── HELPERS (GIỮ NGUYÊN) ────────────────────────────
     private JButton createStyledButton(String text, Color bg, Color fg) {
         JButton btn = new JButton(text);
         btn.setBackground(bg);
@@ -220,8 +214,6 @@ public class AESGui extends JFrame {
         btn.setBorder(new EmptyBorder(14, 36, 14, 36));
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btn.setPreferredSize(new Dimension(210, 58));
-
-        // Hover effect
         Color hoverBg = bg.darker();
         btn.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override public void mouseEntered(java.awt.event.MouseEvent e) { btn.setBackground(hoverBg); }
@@ -238,29 +230,33 @@ public class AESGui extends JFrame {
                 FONT_TITLED, lineColor);
     }
 
-    // ──────────────────────────── ACTIONS ────────────────────────────
+    // ──────────────────────────── ACTIONS (CẬP NHẬT) ────────────────────────────
     private void performEncrypt(ActionEvent e) {
         try {
             String modeStr = (String) modeCombo.getSelectedItem();
             int keySize = modeStr.contains("128") ? 16 : modeStr.contains("192") ? 24 : 32;
 
-            String keyStr = txtKey.getText();
-            if (keyStr.length() != keySize) { showError("Khóa phải đúng " + keySize + " ký tự!"); return; }
+            byte[] key = txtKey.getText().getBytes(StandardCharsets.UTF_8);
+
+            // 1. GỌI VALIDATE TỪ SERVICE (CHẶN KHOẢNG TRẮNG)
+            AESService.validateKey(key);
 
             String plain = txtPlaintext.getText().trim();
             if (plain.isEmpty()) { showError("Vui lòng nhập nội dung cần mã hóa!"); return; }
 
-            byte[] key = keyStr.getBytes(StandardCharsets.UTF_8);
             long start = System.nanoTime();
             String cipher = AESService.encrypt(plain.getBytes(StandardCharsets.UTF_8), key);
             long end = System.nanoTime();
 
+            // 2. LƯU THỜI GIAN VÀO BIẾN TOÀN CỤC
+            this.lastTimeEnc = end - start;
+
             txtCiphertext.setText(cipher);
-            lblTimeEnc.setText("Thời gian mã hóa: " + (end - start) + " ns");
+            lblTimeEnc.setText("Thời gian mã hóa: " + this.lastTimeEnc + " ns");
             showSuccess("Mã hóa thành công ✓");
 
         } catch (Exception ex) {
-            showError("Lỗi mã hóa: " + ex.getMessage());
+            showError(ex.getMessage());
         }
     }
 
@@ -269,25 +265,52 @@ public class AESGui extends JFrame {
             String cipher = txtCiphertext.getText().trim();
             if (cipher.isEmpty()) { showError("Vui lòng nhập bản mã hoặc thực hiện mã hóa trước!"); return; }
 
-            String keyStr = txtKey.getText();
             String modeStr = (String) modeCombo.getSelectedItem();
             int keySize = modeStr.contains("128") ? 16 : modeStr.contains("192") ? 24 : 32;
-            if (keyStr.length() != keySize) { showError("Khóa phải đúng " + keySize + " ký tự!"); return; }
+            byte[] key = txtKey.getText().getBytes(StandardCharsets.UTF_8);
 
-            byte[] key = keyStr.getBytes(StandardCharsets.UTF_8);
+            // GỌI VALIDATE TỪ SERVICE
+            AESService.validateKey(key);
+
             long start = System.nanoTime();
             byte[] decrypted = AESService.decrypt(cipher, key);
             long end = System.nanoTime();
 
+            // LƯU THỜI GIAN VÀO BIẾN TOÀN CỤC
+            this.lastTimeDec = end - start;
+
             txtDecrypted.setText(new String(decrypted, StandardCharsets.UTF_8));
-            lblTimeDec.setText("Thời gian giải mã: " + (end - start) + " ns");
+            lblTimeDec.setText("Thời gian giải mã: " + this.lastTimeDec + " ns");
             showSuccess("Giải mã thành công ✓");
 
         } catch (Exception ex) {
-            showError("Lỗi giải mã: " + ex.getMessage());
+            showError(ex.getMessage());
         }
     }
 
+    private void saveResults() {
+        try {
+            String plain = txtPlaintext.getText().trim();
+            String cipher = txtCiphertext.getText().trim();
+            String recovered = txtDecrypted.getText().trim();
+            String modeStr = (String) modeCombo.getSelectedItem();
+
+            if (cipher.isEmpty()) {
+                showError("Không có dữ liệu bản mã để lưu!");
+                return;
+            }
+
+            // GỌI HÀM LƯU FILE TỪ SERVICE (SỬ DỤNG BIẾN TOÀN CỤC ĐÃ LƯU)
+            AESService.saveToFile(modeStr, plain, cipher, recovered, this.lastTimeEnc, this.lastTimeDec);
+
+            showSuccess("Đã lưu kết quả vào file ket_qua_aes.txt ✓");
+
+        } catch (Exception ex) {
+            showError("Lỗi khi ghi file: " + ex.getMessage());
+        }
+    }
+
+    // ──────────────────────────── CÁC HÀM CÒN LẠI (GIỮ NGUYÊN) ────────────────────────────
     private void showSuccess(String message) {
         lblStatus.setText("✅  " + message);
         lblStatus.setForeground(new Color(20, 130, 90));
@@ -308,12 +331,8 @@ public class AESGui extends JFrame {
         lblTimeDec.setText("Thời gian giải mã: 0 ns");
         lblStatus.setText(" ");
         lblStatus.setBackground(new Color(235, 240, 248));
-    }
-
-    private void saveResults() {
-        JOptionPane.showMessageDialog(this,
-                "Kết quả đã được lưu vào file ket_qua_aes.txt",
-                "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+        this.lastTimeEnc = 0;
+        this.lastTimeDec = 0;
     }
 
     public static void main(String[] args) {
