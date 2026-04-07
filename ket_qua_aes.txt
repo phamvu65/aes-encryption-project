@@ -22,3 +22,12 @@ Ban ma (Base64): pHẠM nGUYEN VŨ
 Thoi gian ma hoa: 5715200 ns
 Thoi gian giai ma: 227400 ns
 -------------------------------------------
+
+-------------------------------------------
+Thoi gian: 2026/04/06 10:41:54
+Thuat toan: Pham nguyen vu 12343490 !@#$$%^&*() (CBC)
+Ban ro: BMb9atqx/rK6gpnHyPc3cKnZSLlaIhxA/20I2EAOhYAKhFJlIPPF+ZdTL32Y+HBU1J93TrOMIfwkgEWcmkO/gA==
+Ban ma (Base64): Pham nguyen vu 12343490 !@#$$%^&*()
+Thoi gian ma hoa: 3729700 ns
+Thoi gian giai ma: 879700 ns
+-------------------------------------------
